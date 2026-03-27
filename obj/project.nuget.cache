@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "dgSpecHash": "IpFExA5WOfE=",
+  "success": true,
+  "projectFilePath": "D:\\CODE\\GAME\\STARDEW\\workshop-autofishing\\AutoFishing.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Administrator\\.nuget\\packages\\pathoschild.stardew.modbuildconfig\\4.2.0\\pathoschild.stardew.modbuildconfig.4.2.0.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1603",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "AutoFishing 依赖于 Pathoschild.Stardew.ModBuildConfig (>= 4.1.3)，但找不到 Pathoschild.Stardew.ModBuildConfig 4.1.3。 已解决 Pathoschild.Stardew.ModBuildConfig 4.2.0 的近似最佳匹配。 ",
+      "libraryId": "Pathoschild.Stardew.ModBuildConfig",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    }
+  ]
+}

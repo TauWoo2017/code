@@ -1,0 +1,9 @@
+D:\CODE\GAME\STARDEW\workshop-autofishing\obj\Debug\net8.0\AutoFishing.csproj.AssemblyReference.cache
+D:\CODE\GAME\STARDEW\workshop-autofishing\obj\Debug\net8.0\AutoFishing.GeneratedMSBuildEditorConfig.editorconfig
+D:\CODE\GAME\STARDEW\workshop-autofishing\obj\Debug\net8.0\AutoFishing.AssemblyInfoInputs.cache
+D:\CODE\GAME\STARDEW\workshop-autofishing\obj\Debug\net8.0\AutoFishing.AssemblyInfo.cs
+D:\CODE\GAME\STARDEW\workshop-autofishing\obj\Debug\net8.0\AutoFishing.csproj.CoreCompileInputs.cache
+D:\CODE\GAME\STARDEW\workshop-autofishing\bin\Debug\net8.0\AutoFishing.deps.json
+D:\CODE\GAME\STARDEW\workshop-autofishing\bin\Debug\net8.0\AutoFishing.dll
+D:\CODE\GAME\STARDEW\workshop-autofishing\obj\Debug\net8.0\AutoFishing.dll
+D:\CODE\GAME\STARDEW\workshop-autofishing\obj\Debug\net8.0\AutoFishing.sourcelink.json
