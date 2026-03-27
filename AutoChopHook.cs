@@ -13,14 +13,14 @@ public class AutoChopHook
     // Auto-chop toggle
     private bool _isEnabled;
 
-    // Movement
-    private bool _isMovingToTree;
-    private Vector2? _targetTree;
-    private int _moveTimeout;
+    // Tree detection timer
+    private int _treeDetectedTimer;
+    private Vector2? _detectedTreePos;
 
     // Chopping state
     private bool _isChopping;
     private int _chopProgress;
+    private Vector2? _currentTreePos;
 
     public AutoChopHook(IMonitor monitor)
     {
@@ -44,24 +44,49 @@ public class AutoChopHook
 
         // Must have axe equipped
         if (Game1.player.CurrentTool is not Axe)
-            return;
-
-        // Handle movement to tree
-        if (_isMovingToTree && _targetTree.HasValue)
         {
-            MoveToTree();
+            ResetState();
             return;
         }
 
-        // Handle chopping
+        // If currently chopping, continue (don't check for new trees)
         if (_isChopping)
         {
             ContinueChopping();
             return;
         }
 
-        // Look for trees to chop
-        FindAndChopTree();
+        // Check for tree in range (adjacent tiles)
+        Vector2? nearestTree = FindTreeInChopRange();
+
+        if (nearestTree.HasValue)
+        {
+            // Tree detected at adjacent tile
+            if (_detectedTreePos.HasValue && _detectedTreePos.Value == nearestTree.Value)
+            {
+                // Same tree, increase timer
+                _treeDetectedTimer++;
+
+                // After 1 second (60 frames), start chopping
+                if (_treeDetectedTimer >= 60)
+                {
+                    StartChopping(nearestTree.Value);
+                    return;
+                }
+            }
+            else
+            {
+                // New tree detected, reset timer
+                _detectedTreePos = nearestTree;
+                _treeDetectedTimer = 0;
+            }
+        }
+        else
+        {
+            // No tree in range, reset detection
+            _detectedTreePos = null;
+            _treeDetectedTimer = 0;
+        }
     }
 
     private Vector2 GetPlayerTile()
@@ -72,48 +97,31 @@ public class AutoChopHook
         );
     }
 
-    private void FindAndChopTree()
-    {
-        Vector2? nearestTree = FindNearestTree();
-
-        if (nearestTree.HasValue)
-        {
-            StartChopping(nearestTree.Value);
-        }
-        else
-        {
-            // No tree nearby, walk around to find one
-            WalkToFindTree();
-        }
-    }
-
-    private Vector2? FindNearestTree()
+    /// <summary>
+    /// Find a tree that is within chop range (adjacent tiles)
+    /// </summary>
+    private Vector2? FindTreeInChopRange()
     {
         Vector2 playerPos = GetPlayerTile();
-        double nearestDist = double.MaxValue;
-        Vector2? nearest = null;
 
-        int searchRadius = 12;
-
-        for (int x = (int)playerPos.X - searchRadius; x <= (int)playerPos.X + searchRadius; x++)
+        // Check all adjacent tiles (including diagonal)
+        for (int dx = -1; dx <= 1; dx++)
         {
-            for (int y = (int)playerPos.Y - searchRadius; y <= (int)playerPos.Y + searchRadius; y++)
+            for (int dy = -1; dy <= 1; dy++)
             {
-                Vector2 tile = new Vector2(x, y);
+                if (dx == 0 && dy == 0)
+                    continue;
+
+                Vector2 tile = new Vector2(playerPos.X + dx, playerPos.Y + dy);
 
                 if (IsTreeAt(tile))
                 {
-                    double dist = Math.Sqrt(Math.Pow(tile.X - playerPos.X, 2) + Math.Pow(tile.Y - playerPos.Y, 2));
-                    if (dist < nearestDist && dist > 1.5)
-                    {
-                        nearestDist = dist;
-                        nearest = tile;
-                    }
+                    return tile;
                 }
             }
         }
 
-        return nearest;
+        return null;
     }
 
     private bool IsTreeAt(Vector2 tile)
@@ -136,67 +144,22 @@ public class AutoChopHook
 
     private void StartChopping(Vector2 treePos)
     {
-        _targetTree = treePos;
-        _isMovingToTree = true;
-        _isChopping = false;
-        _moveTimeout = 600;
+        _isChopping = true;
+        _chopProgress = 0;
+        _currentTreePos = treePos;
+        _detectedTreePos = null;
+        _treeDetectedTimer = 0;
 
-        _monitor.Log($"Auto-chop: Found tree at {treePos}, moving to it...");
+        // Face the tree
+        FaceTree(treePos);
+
+        _monitor.Log($"Auto-chop: Started chopping tree at {treePos}");
     }
 
-    private void MoveToTree()
+    private void FaceTree(Vector2 target)
     {
-        if (!_targetTree.HasValue)
-        {
-            _isMovingToTree = false;
-            return;
-        }
-
-        Vector2 playerPos = GetPlayerTile();
-        Vector2 target = _targetTree.Value;
-        double dist = Math.Sqrt(Math.Pow(target.X - playerPos.X, 2) + Math.Pow(target.Y - playerPos.Y, 2));
-
-        _moveTimeout--;
-
-        // When close enough, start chopping
-        if (dist <= 1.5)
-        {
-            _isMovingToTree = false;
-            _isChopping = true;
-            _chopProgress = 0;
-            FaceTree(target);
-            _monitor.Log("Auto-chop: In range, starting to chop...");
-            return;
-        }
-
-        // Move towards tree step by step
-        float dx = target.X - playerPos.X;
-        float dy = target.Y - playerPos.Y;
-        float length = (float)Math.Sqrt(dx * dx + dy * dy);
-        if (length > 0)
-        {
-            dx /= length;
-            dy /= length;
-        }
-
-        FaceDirection(dx, dy);
-
-        // Walk step by step instead of teleporting
-        // Use addFarmerTrajectory to walk naturally
-        Game1.player.addedSpeed = 2;
-        Game1.player.setMoving(1); // Start walking
-
-        if (_moveTimeout <= 0)
-        {
-            _monitor.Log("Auto-chop: Move timeout, looking for another tree...");
-            _isMovingToTree = false;
-            _targetTree = null;
-            Game1.player.setMoving(0); // Stop walking
-        }
-    }
-
-    private void FaceDirection(float dx, float dy)
-    {
+        float dx = target.X - GetPlayerTile().X;
+        float dy = target.Y - GetPlayerTile().Y;
         if (Math.Abs(dx) > Math.Abs(dy))
         {
             Game1.player.faceDirection(dx > 0 ? 1 : 3);
@@ -207,56 +170,91 @@ public class AutoChopHook
         }
     }
 
-    private void FaceTree(Vector2 target)
-    {
-        float dx = target.X - GetPlayerTile().X;
-        float dy = target.Y - GetPlayerTile().Y;
-        FaceDirection(dx, dy);
-    }
-
     private void ContinueChopping()
     {
-        if (!_targetTree.HasValue)
+        if (!_isChopping)
+            return;
+
+        // Check if we have a tree to chop
+        if (!_currentTreePos.HasValue)
         {
-            _isChopping = false;
+            _monitor.Log("Auto-chop: No tree position, stopping");
+            StopChopping();
             return;
         }
 
-        Vector2 playerPos = GetPlayerTile();
-        Vector2 target = _targetTree.Value;
-        double dist = Math.Sqrt(Math.Pow(target.X - playerPos.X, 2) + Math.Pow(target.Y - playerPos.Y, 2));
+        Vector2 treePos = _currentTreePos.Value;
 
-        // Check if tree still exists
-        if (dist > 3 || !IsTreeAt(target))
+        // Get the tree object
+        var currentLocation = Game1.currentLocation;
+        if (currentLocation == null || currentLocation.terrainFeatures == null)
         {
-            _monitor.Log("Auto-chop: Tree chopped or too far, looking for another...");
-            _isChopping = false;
-            _targetTree = null;
+            StopChopping();
             return;
         }
 
-        // Face the tree and swing axe
-        FaceTree(target);
+        if (!currentLocation.terrainFeatures.TryGetValue(treePos, out var terrain) ||
+            terrain is not StardewValley.TerrainFeatures.Tree tree)
+        {
+            _monitor.Log("Auto-chop: Tree no longer exists");
+            Game1.addHUDMessage(new HUDMessage("Auto-Chop: Tree chopped!"));
+            StopChopping();
+            return;
+        }
+
+        // Face the tree
+        FaceTree(treePos);
+
+        // Swing axe every 20 frames (one swing per ~0.33 seconds at 60fps)
+        if (_chopProgress % 20 == 0 && _chopProgress > 0)
+        {
+            // Directly reduce tree health (copper axe does 3 damage)
+            tree.health.Value -= 3;
+            _monitor.Log($"Auto-chop: Axe swing at tree, tree health: {tree.health.Value}");
+
+            // Trigger tree shake animation
+            tree.shake(treePos * 64f, false);
+
+            // Trigger tool use animation
+            Game1.player.UsingTool = true;
+            Game1.player.animateOnce(6 + Game1.player.FacingDirection);
+
+            // Check if tree is now dead (health <= 0)
+            if (tree.health.Value <= 0)
+            {
+                _monitor.Log("Auto-chop: Tree chopped down!");
+                Game1.addHUDMessage(new HUDMessage("Auto-Chop: Tree chopped!"));
+                ChopTree(treePos);
+                StopChopping();
+                return;
+            }
+        }
 
         _chopProgress++;
 
-        // Swing axe animation every 25 frames
-        if (_chopProgress % 25 == 0)
+        // Safety: after 180 frames (3 seconds of swinging), force remove tree
+        if (_chopProgress >= 180)
         {
-            Game1.player.animateOnce(48 + Game1.player.FacingDirection);
-        }
-
-        // Tree takes about 3 hits (simulated by 60 frames)
-        if (_chopProgress >= 60)
-        {
-            // Remove the tree and spawn wood
-            ChopTree(target);
-            _monitor.Log("Auto-chop: Tree chopped down!");
+            _monitor.Log("Auto-chop: Safety timeout, forcing tree removal");
+            ChopTree(treePos);
             Game1.addHUDMessage(new HUDMessage("Auto-Chop: Tree chopped!"));
-            _isChopping = false;
-            _targetTree = null;
-            _chopProgress = 0;
+            StopChopping();
         }
+    }
+
+    private void StopChopping()
+    {
+        _isChopping = false;
+        _chopProgress = 0;
+        _currentTreePos = null;
+        _detectedTreePos = null;
+        _treeDetectedTimer = 0;
+
+        // Reset player state so they can move again
+        Game1.player.UsingTool = false;
+        Game1.player.CanMove = true;
+        Game1.player.xOffset = 0;
+        Game1.player.yOffset = 0;
     }
 
     private void ChopTree(Vector2 tile)
@@ -269,28 +267,25 @@ public class AutoChopHook
         if (!currentLocation.terrainFeatures.TryGetValue(tile, out var terrain))
             return;
 
-        if (terrain is not StardewValley.TerrainFeatures.Tree tree)
+        if (terrain is not StardewValley.TerrainFeatures.Tree)
             return;
 
         // Remove the tree
         currentLocation.terrainFeatures.Remove(tile);
 
-        // Spawn wood debris (wood is item 388)
-        // Trees drop 1-3 wood when chopped
+        // Spawn wood debris
         int woodCount = _random.Next(1, 4);
         for (int i = 0; i < woodCount; i++)
         {
-            // Spawn wood item debris
             var wood = ItemRegistry.Create("(O)388");
             var debris = new Debris(wood, tile * 64f + new Vector2(32, 32));
             currentLocation.debris.Add(debris);
         }
 
-        // Sometimes spawn a seed (like oak resin or maple seed)
+        // Sometimes spawn a seed
         if (_random.NextDouble() < 0.3)
         {
-            // Spawn a seed/sapling
-            var seed = ItemRegistry.Create("(O)292"); // Mixed seeds
+            var seed = ItemRegistry.Create("(O)292");
             var seedDebris = new Debris(seed, tile * 64f + new Vector2(32, 32));
             currentLocation.debris.Add(seedDebris);
         }
@@ -298,39 +293,12 @@ public class AutoChopHook
         _monitor.Log($"Auto-chop: Spawned {woodCount} wood debris");
     }
 
-    private void WalkToFindTree()
-    {
-        if (_isPlayerMoving())
-            return;
-
-        int direction = _random.Next(4);
-        int dx = 0, dy = 0;
-
-        switch (direction)
-        {
-            case 0: dy = 1; break;  // Down
-            case 1: dy = -1; break; // Up
-            case 2: dx = 1; break;  // Right
-            case 3: dx = -1; break; // Left
-        }
-
-        // Walk step by step
-        FaceDirection(dx, dy);
-        Game1.player.addedSpeed = 2;
-        Game1.player.setMoving(1); // Start walking
-    }
-
-    private bool _isPlayerMoving()
-    {
-        return Math.Abs(Game1.player.xVelocity) > 0.1 || Math.Abs(Game1.player.yVelocity) > 0.1;
-    }
-
     private void ResetState()
     {
-        _isMovingToTree = false;
         _isChopping = false;
-        _targetTree = null;
-        _moveTimeout = 0;
         _chopProgress = 0;
+        _currentTreePos = null;
+        _detectedTreePos = null;
+        _treeDetectedTimer = 0;
     }
 }

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AutoFishing")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0e3cbc777769763528ea2c237b7f85aece7125c2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d683323ef77cbb7a1ec06e018f6eb205b7e36d55")]
 [assembly: System.Reflection.AssemblyProductAttribute("AutoFishing")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AutoFishing")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
