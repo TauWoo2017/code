@@ -1,0 +1,14 @@
+{
+    "Name": "AutoFishing",
+    "Author": "AutoFishMod",
+    "Version": "1.0.0",
+    "Description": "Automatically catches fish when the player casts a line.",
+    "UniqueID": "AutoFishMod.AutoFishing",
+    "MinimumApiVersion": "4.0.0",
+    "ModLoaderVersion": "1.0.0",
+    "UpdateKeys": [],
+    "ContentPackFor": {
+        "UniqueID": "PeacefulFun.SMAPI",
+        "MinimumVersion": "4.0.0"
+    }
+}

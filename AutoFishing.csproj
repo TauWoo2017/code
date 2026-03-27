@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableNuGetAudit>false</EnableNuGetAudit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.3" />
+  </ItemGroup>
+
+  <!-- Game and SMAPI paths -->
+  <PropertyGroup>
+    <GamePath>D:/SteamLibrary/steamapps/common/Stardew Valley</GamePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Stardew Valley">
+      <HintPath>$(GamePath)/Stardew Valley.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="i18n" />
+  </ItemGroup>
+
+</Project>

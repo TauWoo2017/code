@@ -1,0 +1,6 @@
+{
+    "AutoFish.Enabled": "Auto-fishing is now active.",
+    "AutoFish.Disabled": "Auto-fishing is now disabled.",
+    "AutoFish.Caught": "Auto-fish: Caught!",
+    "AutoFish.Escaped": "Auto-fish: Fish escaped."
+}
